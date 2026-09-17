@@ -1,0 +1,14 @@
+C:\Users\Ksenija\LibrarySystemApp\bin\Debug\net9.0\LibrarySystemApp.exe
+C:\Users\Ksenija\LibrarySystemApp\bin\Debug\net9.0\LibrarySystemApp.deps.json
+C:\Users\Ksenija\LibrarySystemApp\bin\Debug\net9.0\LibrarySystemApp.runtimeconfig.json
+C:\Users\Ksenija\LibrarySystemApp\bin\Debug\net9.0\LibrarySystemApp.dll
+C:\Users\Ksenija\LibrarySystemApp\bin\Debug\net9.0\LibrarySystemApp.pdb
+C:\Users\Ksenija\LibrarySystemApp\obj\Debug\net9.0\LibrarySystemApp.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Ksenija\LibrarySystemApp\obj\Debug\net9.0\LibrarySystemApp.AssemblyInfoInputs.cache
+C:\Users\Ksenija\LibrarySystemApp\obj\Debug\net9.0\LibrarySystemApp.AssemblyInfo.cs
+C:\Users\Ksenija\LibrarySystemApp\obj\Debug\net9.0\LibrarySystemApp.csproj.CoreCompileInputs.cache
+C:\Users\Ksenija\LibrarySystemApp\obj\Debug\net9.0\LibrarySystemApp.dll
+C:\Users\Ksenija\LibrarySystemApp\obj\Debug\net9.0\refint\LibrarySystemApp.dll
+C:\Users\Ksenija\LibrarySystemApp\obj\Debug\net9.0\LibrarySystemApp.pdb
+C:\Users\Ksenija\LibrarySystemApp\obj\Debug\net9.0\LibrarySystemApp.genruntimeconfig.cache
+C:\Users\Ksenija\LibrarySystemApp\obj\Debug\net9.0\ref\LibrarySystemApp.dll
