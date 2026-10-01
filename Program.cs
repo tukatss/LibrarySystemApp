@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -7,6 +8,75 @@ namespace LibrarySystem
     public interface IPrintable
     {
         void PrintDetails();
+    }
+
+    public interface IReadOnlyStorage<out T>
+    {
+        T GetAt(int index);
+        int Count { get; }
+    }
+
+    public interface IStorageProcessor<in T>
+    {
+        void Process(T item);
+    }
+
+    public class BasePrintProcessor : IStorageProcessor<IPrintable>
+    {
+        public void Process(IPrintable item)
+        {
+            item.PrintDetails();
+        }
+    }
+
+    public class LibraryStorage<T> : IEnumerable<T>, IReadOnlyStorage<T> where T : IPrintable
+    {
+        private readonly List<T> _items = new List<T>();
+
+        public int Count => _items.Count;
+
+        public void Add(T item)
+        {
+            if (item == null)
+                throw new ArgumentNullException(nameof(item), "Элемент не может быть null!");
+            _items.Add(item);
+        }
+
+        public T GetAt(int index)
+        {
+            if (index < 0 || index >= _items.Count)
+                throw new IndexOutOfRangeException("Индекс вне диапазона хранилища!");
+            return _items[index];
+        }
+
+        public IEnumerator<T> GetEnumerator()
+        {
+            return _items.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+    }
+
+    public class Author : IPrintable
+    {
+        public string FullName { get; set; }
+        public int BirthYear { get; set; }
+
+        public Author(string fullName, int birthYear)
+        {
+            FullName = fullName;
+            BirthYear = birthYear;
+        }
+
+        public void PrintDetails()
+        {
+            Console.WriteLine($"Автор: {FullName} (род. {BirthYear} г.)");
+        }
+
+        public override string ToString() => FullName;
     }
 
     public abstract class Genre
@@ -73,25 +143,6 @@ namespace LibrarySystem
         }
     }
 
-    public class Author : IPrintable
-    {
-        public string FullName { get; set; }
-        public int BirthYear { get; set; }
-
-        public Author(string fullName, int birthYear)
-        {
-            FullName = fullName;
-            BirthYear = birthYear;
-        }
-
-        public void PrintDetails()
-        {
-            Console.WriteLine($"Автор: {FullName} (род. {BirthYear} г.)");
-        }
-
-        public override string ToString() => FullName;
-    }
-
     public class Book : IPrintable
     {
         private int _year;
@@ -132,7 +183,7 @@ namespace LibrarySystem
     {
         public string Name { get; set; }
         public int Floor { get; set; }
-        public List<Book> Books { get; private set; } = new List<Book>();
+        public LibraryStorage<Book> Storage { get; private set; } = new LibraryStorage<Book>();
 
         public LibraryHall(string name, int floor)
         {
@@ -140,7 +191,20 @@ namespace LibrarySystem
             Floor = floor;
         }
 
-        public void AddBook(Book book) => Books.Add(book);
+        public void AddBook(Book book) => Storage.Add(book);
+        public IReadOnlyStorage<IPrintable> GetReadOnlyStorage()
+        {
+            return Storage; // КОВАРИАНТНОСТЬ 
+        }
+
+        public void ProcessStorage(IStorageProcessor<Book> processor)
+        {
+            foreach (var book in Storage)
+            {
+                processor.Process(book); // КОНТРАВАРИАНТНОСТЬ 
+                Console.WriteLine();
+            }
+        }
     }
 
     public class Library
@@ -153,7 +217,7 @@ namespace LibrarySystem
             Name = name;
         }
 
-        public int GetTotalBooksCount() => Halls.Sum(h => h.Books.Count);
+        public int GetTotalBooksCount() => Halls.Sum(h => h.Storage.Count);
     }
 
     public class BookSearchService
@@ -168,7 +232,7 @@ namespace LibrarySystem
         public List<Book> FindByAuthor(string authorName)
         {
             return _library.Halls
-                .SelectMany(h => h.Books)
+                .SelectMany(h => h.Storage)
                 .Where(b => b.BookAuthor.FullName.Contains(authorName, StringComparison.OrdinalIgnoreCase))
                 .ToList();
         }
@@ -176,7 +240,7 @@ namespace LibrarySystem
         public List<Book> FindByGenre(string genreName)
         {
             return _library.Halls
-                .SelectMany(h => h.Books)
+                .SelectMany(h => h.Storage)
                 .Where(b => b.BookGenre.Name.Equals(genreName, StringComparison.OrdinalIgnoreCase))
                 .ToList();
         }
@@ -286,9 +350,10 @@ namespace LibrarySystem
             while (!exit)
             {
                 Console.Clear();
-                Console.WriteLine($"СИСТЕМА УПРАВЛЕНИЯ ФОНДОМ: {library.Name.ToUpper()} ===");
+                Console.WriteLine($"=== СИСТЕМА УПРАВЛЕНИЯ ФОНДОМ: {library.Name.ToUpper()} ===");
                 Console.WriteLine($"Всего книг в базе: {library.GetTotalBooksCount()}");
-                Console.WriteLine("1. Посмотреть весь каталог книг по залам");
+                Console.WriteLine("-------------------------------------------------------");
+                Console.WriteLine("1. Посмотреть каталог (обработка хранилища через контравариантный процессор)");
                 Console.WriteLine("2. Найти книги по автору");
                 Console.WriteLine("3. Найти книги по жанру");
                 Console.WriteLine("0. Выход");
@@ -319,17 +384,17 @@ namespace LibrarySystem
         private static void ShowAllCatalog(Library library)
         {
             Console.Clear();
-            Console.WriteLine("   ПОЛНЫЙ КАТАЛОГ БИБЛИОТЕКИ   \n");
+            Console.WriteLine("=== ПОЛНЫЙ КАТАЛОГ ===\n");
+
+            IStorageProcessor<IPrintable> generalProcessor = new BasePrintProcessor();
+
             foreach (var hall in library.Halls)
             {
-                Console.WriteLine($"\n>>> {hall.Name} (Этаж {hall.Floor}) - Книг: {hall.Books.Count}");
+                Console.WriteLine($"\n>>> {hall.Name} (Этаж {hall.Floor}) - Книг: {hall.Storage.Count}");
                 Console.WriteLine(new string('-', 60));
-                foreach (var book in hall.Books)
-                {
-                    book.PrintDetails();
-                    Console.WriteLine();
-                }
+                hall.ProcessStorage(generalProcessor);
             }
+
             Console.WriteLine("\nНажмите ENTER для возврата в меню...");
             Console.ReadLine();
         }
@@ -337,8 +402,8 @@ namespace LibrarySystem
         private static void SearchByAuthorMenu(BookSearchService searchService)
         {
             Console.Clear();
-            Console.Write("Введите имя или фамилию автора (например, Кинг): ");
-            string query = Console.ReadLine();
+            Console.Write("Введите имя или фамилию автора (например, Пушкин): ");
+            string query = Console.ReadLine() ?? string.Empty;
 
             var results = searchService.FindByAuthor(query);
             Console.WriteLine($"\nНайдено книг: {results.Count}\n");
@@ -355,7 +420,7 @@ namespace LibrarySystem
         {
             Console.Clear();
             Console.Write("Введите название жанра (Поэзия, История, Популярная наука, Ужасы/Мистика): ");
-            string query = Console.ReadLine();
+            string query = Console.ReadLine() ?? string.Empty;
 
             var results = searchService.FindByGenre(query);
             Console.WriteLine($"\nНайдено книг: {results.Count}\n");
